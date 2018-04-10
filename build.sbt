@@ -1,6 +1,6 @@
 name := "spark-salesforce"
 
-version := "1.1.1"
+version := "1.1.1-db1-SNAPSHOT"
 
 organization := "com.springml"
 
