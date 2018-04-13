@@ -17,7 +17,8 @@ package com.springml.spark.salesforce
 
 import java.text.SimpleDateFormat
 
-import com.springml.salesforce.wave.api.APIFactory
+import com.springml.salesforce.wave.api.{APIFactory, BulkAPI}
+import org.apache.http.Header
 import org.apache.log4j.Logger
 import org.apache.spark.sql.sources.{BaseRelation, CreatableRelationProvider, RelationProvider, SchemaRelationProvider}
 import org.apache.spark.sql.types.StructType
@@ -62,10 +63,16 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     val maxRetry = parameters.getOrElse("maxRetry", "5")
     val inferSchema = parameters.getOrElse("inferSchema", "false")
     val dateFormat = parameters.getOrElse("dateFormat", null)
+    val contentType = parameters.getOrElse("contentType", "CSV")
+    val bulk = parameters.getOrElse("bulk", "false")
+    val parallel = parameters.getOrElse("parallel", "false")
+    val chunkSize = parameters.getOrElse("chunkSize", "100000")
     // This is only needed for Spark version 1.5.2 or lower
     // Special characters in older version of spark is not handled properly
     val encodeFields = parameters.get("encodeFields")
     val replaceDatasetNameWithId = parameters.getOrElse("replaceDatasetNameWithId", "false")
+
+    val sfObject = parameters.get("sfObject")
 
     validateMutualExclusive(saql, soql, "saql", "soql")
     val inferSchemaFlag = flag(inferSchema, "inferSchema")
@@ -80,11 +87,20 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
         logger.warn("Ignoring 'replaceDatasetNameWithId' option as it is not applicable to soql")
       }
 
-      val forceAPI = APIFactory.getInstance.forceAPI(username, password, login,
+      val bulkFlag = flag(bulk, "bulk")
+
+      if (bulkFlag) {
+        val bulkApi = APIFactory.getInstance.bulkAPI(username, password, login, version)
+
+        BulkRelation(soql.get, sfObject.get, bulkApi, contentType, customHeaders, schema, sqlContext,
+          encodeFields, inferSchemaFlag, replaceDatasetNameWithId.toBoolean, sdf(dateFormat))
+      } else {
+        val forceAPI = APIFactory.getInstance.forceAPI(username, password, login,
           version, Integer.getInteger(pageSize), Integer.getInteger(maxRetry))
-      DatasetRelation(null, forceAPI, soql.get, schema, sqlContext,
+        DatasetRelation(null, forceAPI, soql.get, schema, sqlContext,
           null, 0, sampleSize.toInt, encodeFields, inferSchemaFlag,
           replaceDatasetNameWithId.toBoolean, sdf(dateFormat))
+      }
     }
 
   }
