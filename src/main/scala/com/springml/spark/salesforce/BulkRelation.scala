@@ -78,49 +78,4 @@ case class BulkRelation(
 
     return false
   }
-
-  override def schema: StructType = {
-    if (userSchema != null) {
-      userSchema
-    } else if (records == null || records.size() == 0) {
-      new StructType()
-    } else if (inferSchema) {
-      InferSchema(sampleRDD, header, sdf)
-    } else {
-      val schemaHeader = header
-      val structFields = new Array[StructField](schemaHeader.length)
-      var index: Int = 0
-      logger.debug("header size " + schemaHeader.length)
-      for (fieldEntry <- schemaHeader) {
-        logger.debug("header (" + index + ") = " + fieldEntry)
-        structFields(index) = StructField(fieldEntry, StringType, nullable = true)
-        index = index + 1
-      }
-
-      StructType(structFields)
-    }
-  }
-
-  override def buildScan(): RDD[Row] = {
-    val schemaFields = schema.fields
-    logger.info("Total records size : " + records.size())
-    val rowArray = new Array[Row](records.size())
-    var rowIndex: Int = 0
-    for (row <- records) {
-      val fieldArray = new Array[Any](schemaFields.length)
-      logger.debug("Total Fields length : " + schemaFields.length)
-      var fieldIndex: Int = 0
-      for (fields <- schemaFields) {
-        val value = fieldValue(row, fields.name)
-        logger.debug("fieldValue " + value)
-        fieldArray(fieldIndex) = cast(value, fields.dataType, fields.nullable, fields.name)
-        fieldIndex = fieldIndex + 1
-      }
-
-      logger.debug("rowIndex : " + rowIndex)
-      rowArray(rowIndex) = Row.fromSeq(fieldArray)
-      rowIndex = rowIndex + 1
-    }
-    sqlContext.sparkContext.parallelize(rowArray)
-  }
 }

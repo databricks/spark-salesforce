@@ -19,10 +19,13 @@ import java.text.SimpleDateFormat
 
 import com.springml.salesforce.wave.api.{APIFactory, BulkAPI}
 import org.apache.http.Header
+import org.apache.http.message.BasicHeader
 import org.apache.log4j.Logger
 import org.apache.spark.sql.sources.{BaseRelation, CreatableRelationProvider, RelationProvider, SchemaRelationProvider}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode}
+
+import scala.collection.mutable.ListBuffer
 
 /**
  * Default source for Salesforce wave data source.
@@ -64,9 +67,10 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
     val inferSchema = parameters.getOrElse("inferSchema", "false")
     val dateFormat = parameters.getOrElse("dateFormat", null)
     val contentType = parameters.getOrElse("contentType", "CSV")
-    val bulk = parameters.getOrElse("bulk", "false")
-    val parallel = parameters.getOrElse("parallel", "false")
-    val chunkSize = parameters.getOrElse("chunkSize", "100000")
+    val bulkStr = parameters.getOrElse("bulk", "false")
+
+    val bulkFlag = flag(bulkStr, "bulkStr")
+
     // This is only needed for Spark version 1.5.2 or lower
     // Special characters in older version of spark is not handled properly
     val encodeFields = parameters.get("encodeFields")
@@ -87,13 +91,50 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
         logger.warn("Ignoring 'replaceDatasetNameWithId' option as it is not applicable to soql")
       }
 
-      val bulkFlag = flag(bulk, "bulk")
+      if (soql.isEmpty) {
+        throw new Exception("soql must not be empty")
+      }
+
+      if (sfObject.isEmpty) {
+        throw new Exception("sfObject must not be empty")
+      }
 
       if (bulkFlag) {
         val bulkApi = APIFactory.getInstance.bulkAPI(username, password, login, version)
+        var customHeaders = ListBuffer[Header]()
 
-        BulkRelation(soql.get, sfObject.get, bulkApi, contentType, customHeaders, schema, sqlContext,
-          encodeFields, inferSchemaFlag, replaceDatasetNameWithId.toBoolean, sdf(dateFormat))
+        val pkChunkingStr = parameters.getOrElse("pkChunking", "false")
+        val pkChunking = flag(pkChunkingStr, "pkChunkingStr")
+
+        if (pkChunking) {
+          val chunkSize = parameters.get("chunkSize")
+
+          if (chunkSize.isEmpty) {
+            try {
+              chunkSize.get.toInt
+            }
+            catch {
+              case e: Exception => throw new Exception("chunkSize must be a valid integer")
+            }
+            customHeaders += new BasicHeader("Sforce-Enable-PKChunking", s"chunkSize=$chunkSize")
+          } else {
+            customHeaders += new BasicHeader("Sforce-Enable-PKChunking", "true")
+          }
+        }
+
+        BulkRelation(
+          soql.get,
+          sfObject.get,
+          bulkApi,
+          contentType,
+          customHeaders.toList,
+          schema,
+          sqlContext,
+          encodeFields,
+          inferSchemaFlag,
+          replaceDatasetNameWithId.toBoolean,
+          sdf(dateFormat)
+        )
       } else {
         val forceAPI = APIFactory.getInstance.forceAPI(username, password, login,
           version, Integer.getInteger(pageSize), Integer.getInteger(maxRetry))
