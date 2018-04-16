@@ -29,6 +29,8 @@ case class BulkRelation(
     replaceDatasetNameWithId: Boolean,
     sdf: SimpleDateFormat) extends BaseRelation with TableScan {
 
+  import sqlContext.sparkSession.implicits._
+
   private val logger = Logger.getLogger(classOf[BulkRelation])
 
   def schema = records.schema
@@ -36,7 +38,7 @@ case class BulkRelation(
 
   lazy val records: DataFrame = {
     val inputJobInfo = new JobInfo(contentType, sfObject, "query")
-    val jobInfo = bulkAPI.createJob(inputJobInfo, customHeaders)
+    val jobInfo = bulkAPI.createJob(inputJobInfo, customHeaders.asJava)
     val jobId = jobInfo.getId
 
     val batchInfo = bulkAPI.addBatch(jobId, query)
@@ -52,7 +54,7 @@ case class BulkRelation(
 
           val result = bulkAPI.getBatchResult(jobId, batchInfo.getId, resultIds.get(resultIds.size() - 1))
 
-          result.stripMargin.lines.toList
+          result.lines.toList
         })
       ).toDS()
 

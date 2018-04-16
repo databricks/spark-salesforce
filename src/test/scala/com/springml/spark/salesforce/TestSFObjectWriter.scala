@@ -23,50 +23,50 @@ class TestSFObjectWriter extends FunSuite with MockitoSugar with BeforeAndAfterE
   var sparkConf: SparkConf = _
   var sc: SparkContext = _
 
-  override def beforeEach() {
-    val jobInfo = new JobInfo
-    jobInfo.setId(jobId)
-    when(bulkAPI.createJob(contact)).thenReturn(jobInfo)
-
-    val batchInfo = new BatchInfo
-    batchInfo.setId(batchId)
-    batchInfo.setJobId(jobId)
-    when(bulkAPI.addBatch(jobId, data)).thenReturn(batchInfo)
-
-    when(bulkAPI.closeJob(jobId)).thenReturn(jobInfo)
-    when(bulkAPI.isCompleted(jobId)).thenReturn(true)
-    when(writer.bulkAPI()).thenReturn(bulkAPI)
-
-    sparkConf = new SparkConf().setMaster("local").setAppName("Test SF Object Update")
-    sc = new SparkContext(sparkConf)
-  }
-
-  private def sampleDF() : DataFrame = {
-    val rowArray = new Array[Row](2)
-    val fieldArray = new Array[String](2)
-
-    fieldArray(0) = "003B00000067Rnx"
-    fieldArray(1) = "Desc1"
-    rowArray(0) = Row.fromSeq(fieldArray)
-
-    val fieldArray1 = new Array[String](2)
-    fieldArray1(0) = "001B00000067Rnx"
-    fieldArray1(1) = "Desc2"
-    rowArray(1) = Row.fromSeq(fieldArray1)
-
-    val rdd = sc.parallelize(rowArray)
-    val schema = StructType(
-      StructField("id", StringType, true) ::
-      StructField("desc", StringType, true) :: Nil)
-
-    val sqlContext = new SQLContext(sc)
-    sqlContext.createDataFrame(rdd, schema)
-  }
-
-  test ("Write Object to Salesforce") {
-    val df = sampleDF();
-    val csvHeader = Utils.csvHeadder(df.schema)
-    writer.writeData(df.rdd)
-    sc.stop()
-  }
+//  override def beforeEach() {
+//    val jobInfo = new JobInfo
+//    jobInfo.setId(jobId)
+//    when(bulkAPI.createJob(contact)).thenReturn(jobInfo)
+//
+//    val batchInfo = new BatchInfo
+//    batchInfo.setId(batchId)
+//    batchInfo.setJobId(jobId)
+//    when(bulkAPI.addBatch(jobId, data)).thenReturn(batchInfo)
+//
+//    when(bulkAPI.closeJob(jobId)).thenReturn(jobInfo)
+//    when(bulkAPI.isCompleted(jobId)).thenReturn(true)
+//    when(writer.bulkAPI()).thenReturn(bulkAPI)
+//
+//    sparkConf = new SparkConf().setMaster("local").setAppName("Test SF Object Update")
+//    sc = new SparkContext(sparkConf)
+//  }
+//
+//  private def sampleDF() : DataFrame = {
+//    val rowArray = new Array[Row](2)
+//    val fieldArray = new Array[String](2)
+//
+//    fieldArray(0) = "003B00000067Rnx"
+//    fieldArray(1) = "Desc1"
+//    rowArray(0) = Row.fromSeq(fieldArray)
+//
+//    val fieldArray1 = new Array[String](2)
+//    fieldArray1(0) = "001B00000067Rnx"
+//    fieldArray1(1) = "Desc2"
+//    rowArray(1) = Row.fromSeq(fieldArray1)
+//
+//    val rdd = sc.parallelize(rowArray)
+//    val schema = StructType(
+//      StructField("id", StringType, true) ::
+//      StructField("desc", StringType, true) :: Nil)
+//
+//    val sqlContext = new SQLContext(sc)
+//    sqlContext.createDataFrame(rdd, schema)
+//  }
+//
+//  test ("Write Object to Salesforce") {
+//    val df = sampleDF();
+//    val csvHeader = Utils.csvHeadder(df.schema)
+//    writer.writeData(df.rdd)
+//    sc.stop()
+//  }
 }

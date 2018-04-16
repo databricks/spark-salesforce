@@ -109,7 +109,7 @@ class DefaultSource extends RelationProvider with SchemaRelationProvider with Cr
         if (pkChunking) {
           val chunkSize = parameters.get("chunkSize")
 
-          if (chunkSize.isEmpty) {
+          if (!chunkSize.isEmpty) {
             try {
               chunkSize.get.toInt
             }

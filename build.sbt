@@ -11,7 +11,7 @@ resolvers += "sonatype-snapshots" at "https://oss.sonatype.org/content/repositor
 libraryDependencies ++= Seq(
   "com.force.api" % "force-wsc" % "40.0.0",
   "com.force.api" % "force-partner-api" % "40.0.0",
-  "com.springml" % "salesforce-wave-api" % "1.0.8",
+//  "com.springml" % "salesforce-wave-api" % "1.0.8",
   "org.mockito" % "mockito-core" % "2.0.31-beta"
 )
 
@@ -31,13 +31,13 @@ libraryDependencies += "org.scalatest" %% "scalatest" % "2.2.1" % "test"
 libraryDependencies += "com.madhukaraphatak" %% "java-sizeof" % "0.1"
 libraryDependencies += "com.fasterxml.jackson.dataformat" % "jackson-dataformat-xml" % "2.4.4"
 libraryDependencies += "org.codehaus.woodstox" % "woodstox-core-asl" % "4.4.0"
-
+libraryDependencies += "com.springml" % "salesforce-wave-api" % "1.0.8-db1-SNAPSHOT" from "file:///Users/kjiang/workspace_personal/salesforce-wave-api/target/salesforce-wave-api-1.0.8-db1-SNAPSHOT.jar"
 // Spark Package Details (sbt-spark-package)
 spName := "springml/spark-salesforce"
 
 spAppendScalaVersion := true
 
-sparkVersion := "2.1.0"
+sparkVersion := "2.2.0"
 
 sparkComponents += "sql"
 
